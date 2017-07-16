@@ -8,6 +8,8 @@ Python 2.7
 
 ### Usage
 
+Crawler
+
 ```
 python run.py -a [hula account] -p [hula password] -b [board] -s [starting article number] -e [ending article number]
 ```
@@ -20,6 +22,14 @@ Or if you only want to download article No.30:
 ```
 python run.py -a account -p password -b Cs11 -s 30 -e 30
 ```
+
+Viewer
+
+```
+python viewer.py -b [article directory]
+```
+
+Note that the Viewer can only parse "raw_data" articles.
 
 ### Download Folder
 
@@ -39,9 +49,8 @@ timeout = 6
 
 [data]
 page_splitter =
-
-[encode]
-file_name = big5 | utf8
+save_mode = text | raw_data
+encode = big5 | utf8
 
 ```
 - If your connection to hulabear is too slow, you can increase the `timeout` limit.
@@ -50,19 +59,20 @@ file_name = big5 | utf8
 
 ## Features
 * Save each article as a single text file.
-* Remove BBS color code.
+* Remove BBS color code (text mode).
 * Auto-skiping board opening page.
 * Skip inaccessible F(friend only) or L(locked) articles.
 * Delete duplicated account login.
+* View colorful articles using the viewer.
 
 ## Known Issues
 Waiting for your pull request to fix these issues :)
 * Do not support most of the BBS control code.
 * Lines hit the end of the page will appear twice.
-  (because hulabear copies the ending line of a page to the next page as a begining line)
+  (because hulabear copies the ending line of a page to the next page as a head line)
 * Unexpected spaces in article (due to BBS control code).
 
 ## Acknowledgments
 
-The reformat part I reference the craler by [geniusturtle](https://github.com/geniusturtle6174/hulabear-crawler)
+The reformat part I reference the crawler by [geniusturtle](https://github.com/geniusturtle6174/hulabear-crawler)
 

@@ -16,6 +16,7 @@ class Connector:
         self.config = ConfigParser.ConfigParser()
         self.config.read("config.ini")
         self._timeout = self.config.getint("host", "timeout")
+        self._save_mode = self.config.get("data", "save_mode")
         print "set bbs timeout = " + str(self._timeout) + "s"
 
     def expect(self, list):
@@ -44,7 +45,7 @@ class Connector:
         skip_cnt = 0
         while self.expect([u"看板《尚未選定》"]) == -1:
             skip_cnt += 1
-            print "skipped " + str(skip_cnt) + " / 3 login page..."               
+            print "skipped " + str(skip_cnt) + " / 3 login page..."
             self._tn.write('\r\n')
         print "login successfully."
 
@@ -53,7 +54,7 @@ class Connector:
         if self.expect([u"看板列表"]) == -1:
             with open('error.log', 'a') as f:
                 f.write(self.buffer)
-            raise KeyError("expect board list but not. check error.log for details")
+            raise KeyError("expect board list but not. check error.log")
         self._tn.write('s')             # search
         self._tn.write(board + '\r\n')  # enter board name
         if self.expect([u"錯誤的看板名稱"]) != -1:
@@ -66,37 +67,47 @@ class Connector:
             self._tn.write('\r\n')
             retry_cnt += 1
             if retry_cnt > 10:
-                raise KeyError("cannot enter the board. possible reasons: " + 
-                        "1) the board have more than 10 opening pages, or " + 
-                        "2) the board name you entered doesn't match (case-sensitive).")
+                raise KeyError("cannot enter the board. possible reasons: " +
+                        "1) the board have more than 10 opening pages, or " +
+                        "2) the board name doesn't match (case-sensitive).")
         print "now you are in board: " + board
 
     def download_board(self, board, start, end):
         self.enter_board(board)
 
-        download_folder = "download_" + str(board)
-        if not os.path.exists(download_folder):
-            os.makedirs(download_folder)
+        download_dir = "download_" + str(board)
+        if not os.path.exists(download_dir):
+            os.makedirs(download_dir)
 
         for i in range(int(start), int(end)+1):
-            with open(os.path.join(download_folder, str(i) + ".txt"), "w") as file:
+            with open(os.path.join(download_dir, str(i) + ".txt"), "w") as file:
                 print "start downloading article " + str(i)
                 self.read()                        # read article list to clean screen
                 self._tn.write(str(i) + '\r\n'*2)  # directly input number to find article
-                content = self._formatter.normalize(self.read_article())
-                title = str(i) + self._formatter.escape_article_title(self._formatter.parse_article_title(content))
-                file.write(content)
+
+                # keep Big-5 until writing in the file for rest processes
+                raw_data = self.read_article()
+                text_data = self._formatter.normalize(raw_data)
+                title = str(i) + self._formatter.escape_article_title(
+                        self._formatter.parse_article_title(text_data))
+                if self._save_mode == "text":
+                    file.write(self._formatter.encoding(text_data))
+                elif self._save_mode == "raw_data":
+                    file.write(self._formatter.encoding(raw_data))
+                else:
+                    raise KeyError("unrecognized save file mode: " + self._save_mode)
+
                 self._tn.write('q')
 
-            self._rename_article(download_folder, str(i)+".txt", title+".txt")
+            self._rename_article(download_dir, str(i) + file_ext, title + file_ext)
 
-    def _rename_article(self, download_folder, old_title, new_title):
+    def _rename_article(self, download_dir, old_title, new_title):
         try:
-            if os.path.exists(os.path.join(download_folder, new_title)):
-                os.remove(os.path.join(download_folder, new_title))
+            if os.path.exists(os.path.join(download_dir, new_title)):
+                os.remove(os.path.join(download_dir, new_title))
 
-            os.rename(os.path.join(download_folder, old_title),
-                      os.path.join(download_folder, new_title))
+            os.rename(os.path.join(download_dir, old_title),
+                      os.path.join(download_dir, new_title))
         except OSError as e:
             print "cannot rename file as %s" % new_title, e
 
@@ -122,7 +133,7 @@ class Connector:
             self._tn.write('\r\n')
             counter += 1
         else:
-            data = "you don't have permission to read this article. Possibly a F- or L-article."
-            print data
-
+            print("you don't have permission to read this article." +
+                    "Possibly a F- or L-article.")
+            data = ''
         return data
