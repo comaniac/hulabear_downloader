@@ -34,7 +34,10 @@ def show_article(data, index):
     curr_page = 0
     while True:
         page_start = pages[curr_page]
-        page_end = pages[curr_page + 1]
+        if curr_page == len(pages) - 1:
+            page_end = -1
+        else:
+            page_end = pages[curr_page + 1]
         sys.stdout.write(article[page_start:page_end] + '\n')
         sys.stdout.flush()
         cmd = get_user_command("(n)ext page, (p)revious page, b(a)ck: ")
