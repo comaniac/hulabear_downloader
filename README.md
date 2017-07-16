@@ -50,7 +50,7 @@ timeout = 6
 [data]
 page_splitter =
 save_mode = text | raw_data
-encode = big5 | utf8
+file_encode = big5 | utf8
 
 ```
 - If your connection to hulabear is too slow, you can increase the `timeout` limit.
